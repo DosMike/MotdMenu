@@ -1,0 +1,39 @@
+* {
+	box-sizing: border-box;
+}
+body {
+	background: #676570 url(img/background.png) 0 0 no-repeat fixed;
+	background-size: cover;
+	color: #ffffff;
+	max-width: 730px;
+	margin: auto;
+}
+.menuitem {
+	background: rgba(255,255,255,0.1);
+	text-align: center;
+	vertical-align: middle;
+	max-width: 19%;
+	width: 19%;
+	min-height: 3em;
+	padding: .2em .5em;
+	margin: .2em .4%;
+	display: inline-block;
+	border-radius: .2em;
+	text-decoration: none;
+	color: #ffffff;
+}
+span.menuitem {
+	cursor:not-allowed;
+}
+.menuitem:active, .menuitem:hover {
+	background: rgba(255,255,255,0.2);
+}
+.menuitem img {
+	width: 80%;
+	margin: auto;
+	display: block;
+	border: none;
+}
+.rightalign {
+	text-align: right;
+}
