@@ -96,7 +96,7 @@ are only a hand full of command that you need:
 | `CreateMenu`<br>`new Menu` | `CreateMotdMenu`<br>`new MotdMenu` |  |
 | `DisplayMenu`<br>`Menu.Display` | `DisplayMotdMenu`<br>`MotdMenu.DisplayMotd` | Only the method map will automatically fall back to `Menu.Display` if Motd Menus are disabled |
 | `CancelMenu`<br>`Menu.Cancel` | `CancelMotdMenu`<br>`MotdMenu.Cancel` | Will hide the menu, again should fall back to `CancelMenu` if not Motd Menu is open |
-| `delete menu` | `CloseMotdMenu`<br>`MotdMenu.Close` | This call is necessary to remove some additional resources the plugin<br>needs to store to make callbacks from the motd browser work |
+| `delete menu` | `CloseMotdMenu`<br>`MotdMenu.Close` | This call is necessary to remove some additional resources the plugin needs to store to make callbacks from the motd browser work |
 
 The methodmap tries to hide away the logic for optional includes. So if you
 include `motdmenu.inc` optional, the `MotdMenu` methodmap automatically
