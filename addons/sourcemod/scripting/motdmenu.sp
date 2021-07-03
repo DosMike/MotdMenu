@@ -441,13 +441,14 @@ public void Await_QueryError(Database db, DBResultSet results, const char[] erro
 	}
 }
 
-static bool InvokeIconProvider(MotdIconPathProvider provider, const char[] info, char[] icon, int cap) {
+static bool InvokeIconProvider(Handle plugin, MotdIconPathProvider provider, const char[] info, char[] icon, int cap) {
 	if (provider == INVALID_FUNCTION) return false;
-	Call_StartFunction(INVALID_HANDLE, provider);
+	Call_StartFunction(plugin, provider);
 	Call_PushString(info);
 	Call_PushStringEx(icon, cap, SM_PARAM_STRING_UTF8, SM_PARAM_COPYBACK);
-	bool result;
-	return Call_Finish(result)==SP_ERROR_NONE && result;
+	Call_PushCell(cap);
+	bool result = (Call_Finish(result)==SP_ERROR_NONE) && result;
+	return result;
 }
 
 static void AddQueryTx(Transaction tax, const char[] format, any...) {
@@ -627,10 +628,11 @@ public any Native_DisplayMotdMenu(Handle plugin, int argc) {
 	Menu menu = view_as<Menu>(GetNativeCell(1));
 	int client = view_as<int>(GetNativeCell(2));
 	MotdIconPathProvider icons = view_as<MotdIconPathProvider>(GetNativeFunction(3));
+	SMenuExtra mex;
 	
 	if (!Client_IsIngame(client)) ThrowNativeError(SP_ERROR_PARAM, "Invalid client");
 	if (g_clientDisablehtmlmotd[client] || g_clientDisablemotdmenu[client]) return false;
-	if (MenuExtra.FindValue(menu)==-1) ThrowNativeError(SP_ERROR_PARAM, "The menu was not registered with motd menu");
+	if (FindMenuExtra(menu,mex)==-1) ThrowNativeError(SP_ERROR_PARAM, "The menu was not registered with motd menu");
 	if (!g_bDBconnected) ThrowNativeError(SP_ERROR_NATIVE, "MOTD Menu is not connected to a database");
 	
 	char bufInfo[64], bufVal1[256], bufVal2[256], buffer[256], buffer2[64];
@@ -656,7 +658,7 @@ public any Native_DisplayMotdMenu(Handle plugin, int argc) {
 		menu.GetItem(i, buffer2, sizeof(buffer2), style, buffer, sizeof(buffer));
 		SQL_EscapeString(g_database, buffer2, bufInfo, sizeof(bufInfo));
 		SQL_EscapeString(g_database, buffer, bufVal1, sizeof(bufVal1));
-		if (InvokeIconProvider(icons, buffer2, buffer, sizeof(buffer))) {
+		if (InvokeIconProvider(mex.owner, icons, buffer2, buffer, sizeof(buffer))) {
 			SQL_EscapeString(g_database, buffer, bufVal2, sizeof(bufVal2));
 			AddQueryTx(tx, "INSERT INTO motdmenu_itemdef (`serverid`,`menuid`,`client`,`item`,`info`,`value1`,`value2`,`flags`) VALUES ('%s','%s',%i,%i,'%s','%s','%s',%i)",
 				g_dbserverId, menuid, GetClientUserId(client), i, bufInfo, bufVal1, bufVal2, style);

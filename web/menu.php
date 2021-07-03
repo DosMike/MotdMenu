@@ -4,7 +4,7 @@
 	require 'rcon_code.php';
 
 	$menuTitle = 'MOTD Menu';
-	$supprtedPluginVersions = [ '21w26a' ];
+	$supprtedPluginVersions = [ '21w26b' ];
 	
 	//static data - taken from source mod 'menus.inc'
 
@@ -150,6 +150,10 @@
 			}
 		}
 		?><small><?=$sname?></small><h1><?=$menuTitle?></h1><?
+		if (!isset($motdMenuPluginVersion)) {
+			?><b>Something went wrong, please try again.</b><?
+			goto end;
+		}
 		if (!in_array($motdMenuPluginVersion, $supprtedPluginVersions)) {
 			?><b>The web version of Motd Menu does not support plugin version <?=$motdMenuPluginVersion?></b><?
 			goto end;
