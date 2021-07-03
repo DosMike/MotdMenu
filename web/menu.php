@@ -4,7 +4,7 @@
 	require 'rcon_code.php';
 
 	$menuTitle = 'MOTD Menu';
-	$supprtedPluginVersions = [ '21w26b' ];
+	$supprtedPluginVersions = [ '21w26b','21w26c' ];
 	
 	//static data - taken from source mod 'menus.inc'
 

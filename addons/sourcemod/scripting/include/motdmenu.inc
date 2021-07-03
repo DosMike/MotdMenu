@@ -5,8 +5,8 @@
 
 #define MOTDMENU_VERSION_YEAR 21
 #define MOTDMENU_VERSION_WEEK 26
-#define MOTDMENU_VERSION_BUILD 'b'
-#define MOTDMENU_VERSION "21w26b"
+#define MOTDMENU_VERSION_BUILD 'c'
+#define MOTDMENU_VERSION "21w26c"
 
 /**
  * A mapper that provides an image path for the motd browser for the specified menu item
