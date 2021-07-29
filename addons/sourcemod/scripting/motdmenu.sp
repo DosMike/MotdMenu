@@ -14,6 +14,7 @@
 Database g_database;
 bool g_bDBconnected;
 bool g_bEngineIsTF2;
+ConVar g_cvarVersion;
 
 // enum taken from dynamic_motd
 enum /* Ep2vMOTDCmd */ {
@@ -101,6 +102,11 @@ public void OnPluginStart() {
 	if (!strlen(g_motdmenuwwwbase))
 		ThrowError("baseurl in config must be set!");
 	
+	// for server admins i guess
+	g_cvarVersion = CreateConVar("motdmenu_version", MOTDMENU_VERSION, "Version of MotdMenus running on the server (Read Only)", FCVAR_DONTRECORD|FCVAR_CHEAT);
+	g_cvarVersion.AddChangeHook(versionCvarChangeHook);
+	versionCvarChangeHook(g_cvarVersion,"","");
+	
 	// hookeroo
 	
 	g_bEngineIsTF2 = GetEngineVersion() == Engine_TF2;
@@ -120,6 +126,12 @@ public void OnPluginStart() {
 	g_bDBconnected = false;
 	Database.Connect(Await_DatabaseConnected, database);
 	PrintToChatAll("[MotdMenu] Version %s was loaded", MOTDMENU_VERSION);
+}
+
+public void versionCvarChangeHook(ConVar convar, const char[] oldValue, const char[] newValue) {
+	if (!StrEqual(newValue, MOTDMENU_VERSION)) {
+		g_cvarVersion.SetString(MOTDMENU_VERSION);
+	}
 }
 
 public void OnPluginEnd() {
@@ -264,7 +276,7 @@ public Action UserMsg_VGUIMenu(UserMsg msg_id, BfRead msg, const int[] players, 
 }
 
 public Action Event_ClosedHtmlpage(int client, const char[] command, int argc) {
-	Impl_CancelMotdMenu(client, _, MenuCancel_Exit);
+	Impl_CancelMotdMenu(client, true, MenuCancel_Exit);
 	return Plugin_Continue;
 }
 
@@ -273,6 +285,13 @@ public Action Event_ClosedHtmlpage(int client, const char[] command, int argc) {
  */
 void MenuActionIndirect(SMenuExtra mex, MenuAction action, int param1, int param2) {
 	if (!(mex.filter & action)) return; //action was not subscribed to
+	//if a menu is cancelled/interacted with, it usually ends afterwards
+	bool menuEnded, playSound;
+	int endReason, endP2;
+	//determin the proper menu end action and context to play for this action (if any)
+	// using isvalidhanle is ok since the callback can delete the menu
+	playSound = (!(mex.handle.OptionFlags & MENUFLAG_NO_SOUND)); //this has to be done first in case the menu is immediately exited
+	
 	//perform primary action
 	Call_StartFunction(mex.owner, mex.callback);
 	Call_PushCell(mex.handle);
@@ -280,11 +299,6 @@ void MenuActionIndirect(SMenuExtra mex, MenuAction action, int param1, int param
 	Call_PushCell(param1);
 	Call_PushCell(param2);
 	Call_Finish();
-	//if a menu is cancelled/interacted with, it usually ends afterwards
-	bool menuEnded, playSound;
-	int endReason, endP2;
-	//determin the proper menu end action and context to play for this action (if any)
-	playSound = (!(mex.handle.OptionFlags & MENUFLAG_NO_SOUND));
 	switch (action) {
 		case MenuAction_Cancel: {
 			if (param2 == MenuCancel_Exit) {
@@ -346,13 +360,20 @@ static void Impl_CancelMotdMenu(int client, bool closePanel=false, int exitcance
 			}
 		}
 		clientActiveMotdMenu[client] = null;
-		if (closePanel) CloseMOTDPanel(client);
+		if (closePanel) {
+			CloseMOTDPanel(client);
+			RequestFrame(CloseMapInfoPanel, client);
+		}
 		NukeEntries(client);
 	}
 }
 static void CloseMOTDPanel(int client) {
 	if (!Client_IsValid(client)) return;
 	ShowVGUIPanel(client, "info", _, false);
+}
+static void CloseMapInfoPanel(int client) {
+	if (!Client_IsValid(client)) return;
+	ShowVGUIPanel(client, "mapinfo", _, false);
 }
 static void ShowMOTDPanelEx(int client, const char[] title, const char[] msg, int motdpanel_type, int cmd = Cmd_None, bool big=false) {
 	KeyValues kv = new KeyValues("data");
@@ -736,7 +757,7 @@ public any Native_CloseAllMenus(Handle plugin, int args) {
 	for (int i = MenuExtra.Length-1; i >= 0; i--) {
 		MenuExtra.GetArray(i, mex, sizeof(SMenuExtra));
 		if (mex.owner != plugin) continue;
-		for (int c=1;c<MaxClients;i++)
+		for (int c=1;c<MaxClients;c++)
 			if (clientActiveMotdMenu[c]==mex.handle) {
 				clientActiveMotdMenu[c]=null;
 				CloseMOTDPanel(c);
