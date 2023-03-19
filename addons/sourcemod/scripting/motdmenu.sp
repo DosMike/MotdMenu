@@ -30,7 +30,7 @@ enum /* Ep2vMOTDCmd */ {
 enum struct SMenuExtra {
 	Menu handle;
 	Handle owner; //plugin
-	MenuHandler callback;
+	Function callback; //MenuHandler
 	MenuAction filter;
 }
 ArrayList MenuExtra;
@@ -159,6 +159,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 		Impl_CancelMotdMenu(client, _, MenuCancel_NoDisplay);
 	}
 	g_clientButtons[client] = buttons;
+	return Plugin_Continue;
 }
 
 public void OnMapStart() {
@@ -391,12 +392,13 @@ public Action Timer_UpdateClientHtmlMotd(Handle timer) {
 	do {
 		if (++client > MaxClients) {
 			client=1;
-			if (loopBreaker) return;
+			if (loopBreaker) return Plugin_Continue;
 			else loopBreaker =! loopBreaker;
 		}
 	} while (!Client_IsIngame(client) || IsFakeClient(client) || IsClientSourceTV(client));
 	
 	QueryClientConVar(client, "cl_disablehtmlmotd", Await_ClientConvar_Disablehtmlmotd);
+	return Plugin_Continue;
 }
 
 public void Await_ClientConvar_Disablehtmlmotd(QueryCookie cookie, int client, ConVarQueryResult result, const char[] cvarName, const char[] cvarValue) {
@@ -462,14 +464,15 @@ public void Await_QueryError(Database db, DBResultSet results, const char[] erro
 	}
 }
 
-static bool InvokeIconProvider(Handle plugin, MotdIconPathProvider provider, const char[] info, char[] icon, int cap) {
+static bool InvokeIconProvider(Handle plugin, Function/*:MotdIconPathProvider*/ provider, const char[] info, char[] icon, int cap) {
 	if (provider == INVALID_FUNCTION) return false;
 	Call_StartFunction(plugin, provider);
 	Call_PushString(info);
 	Call_PushStringEx(icon, cap, SM_PARAM_STRING_UTF8, SM_PARAM_COPYBACK);
 	Call_PushCell(cap);
-	bool result = (Call_Finish(result)==SP_ERROR_NONE) && result;
-	return result;
+	bool result;
+	int error = Call_Finish(result);
+	return error==SP_ERROR_NONE && result;
 }
 
 static void AddQueryTx(Transaction tax, const char[] format, any...) {
@@ -615,6 +618,7 @@ public int settingsMenuActionHandler(Menu menu, MenuAction action, int param1, i
 	} else if(action == MenuAction_End) {
 		delete menu;
 	}
+	return 0;
 }
 
 // --== NATIVES ==--
@@ -631,7 +635,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 }
 
 public any Native_CreateMotdMenu(Handle plugin, int argc) {
-	MenuHandler callback = view_as<MenuHandler>(GetNativeFunction(1));
+	Function callback = GetNativeFunction(1);
 	MenuAction filter = view_as<MenuAction>(GetNativeCell(2));
 	SMenuExtra mex;
 	
@@ -648,7 +652,7 @@ public any Native_CreateMotdMenu(Handle plugin, int argc) {
 public any Native_DisplayMotdMenu(Handle plugin, int argc) {
 	Menu menu = view_as<Menu>(GetNativeCell(1));
 	int client = view_as<int>(GetNativeCell(2));
-	MotdIconPathProvider icons = view_as<MotdIconPathProvider>(GetNativeFunction(3));
+	Function icons = GetNativeFunction(3); //MotdIconPathProvider
 	SMenuExtra mex;
 	
 	if (!Client_IsIngame(client)) ThrowNativeError(SP_ERROR_PARAM, "Invalid client");
@@ -739,11 +743,13 @@ static void Impl_CloseMotdMenu(Menu menu, bool deleteit) {
 public any Native_CancelMotdMenu(Handle plugin, int argc) {
 	Menu menu = view_as<Menu>(GetNativeCell(1));
 	Impl_CloseMotdMenu(menu, false);
+	return 0;
 }
 public any Native_CloseMotdMenu(Handle plugin, int argc) {
 	Menu menu = view_as<Menu>(GetNativeCellRef(1));
 	Impl_CloseMotdMenu(menu, true);
 	SetNativeCellRef(1, INVALID_HANDLE);
+	return 0;
 }
 
 public any Native_CheckMotdMenu(Handle plugin, int args) {
@@ -765,4 +771,5 @@ public any Native_CloseAllMenus(Handle plugin, int args) {
 		delete mex.handle;
 		MenuExtra.Erase(i);
 	}
+	return 0;
 }

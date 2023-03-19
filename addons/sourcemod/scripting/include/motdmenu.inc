@@ -3,10 +3,10 @@
 #endif
 #define MOTD_MENU
 
-#define MOTDMENU_VERSION_YEAR 21
-#define MOTDMENU_VERSION_WEEK 30
+#define MOTDMENU_VERSION_YEAR 23
+#define MOTDMENU_VERSION_WEEK 11
 #define MOTDMENU_VERSION_BUILD 'a'
-#define MOTDMENU_VERSION "21w30a"
+#define MOTDMENU_VERSION "23w11a"
 
 /**
  * A mapper that provides an image path for the motd browser for the specified menu item
